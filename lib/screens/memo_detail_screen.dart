@@ -109,7 +109,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
           TotalDisplay(total: total),
           Expanded(
             child: ReorderableListView(
-              // buildDefaultDragHandles: false,
+              buildDefaultDragHandles: true,
               onReorder: _reorderItems,
               children: [
                 for (int index = 0; index < _items.length; index++)

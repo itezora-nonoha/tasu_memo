@@ -145,8 +145,8 @@ class _MemoItemTileState extends State<MemoItemTile> {
           ReorderableDragStartListener(
             index: -1, // インデックスは ReorderableListView で上書きされます
             child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8.0),
-              child: Icon(Icons.drag_handle),
+              padding: EdgeInsets.symmetric(horizontal: 0.0),
+              // child: Icon(Icons.drag_handle),
             ),
           ),
         Expanded(
@@ -155,7 +155,10 @@ class _MemoItemTileState extends State<MemoItemTile> {
             child: _buildInputFields(),
           ),
         ),
-        if (isDesktop && !widget.isLastItem)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        ),
+        if (isDesktop && !widget.isLastItem) // なんかisDesktopが機能してない
           IconButton(
             icon: const Icon(Icons.delete),
             onPressed: widget.onDelete,

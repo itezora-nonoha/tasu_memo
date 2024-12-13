@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/memo.dart';
 import '../providers/memo_provider.dart';
+import '../utils/memo_utils.dart';
 import '../utils/number_formatter.dart';
+import '../constants/app_strings.dart';
 import 'memo_detail_screen.dart';
 
 class MemoListScreen extends StatelessWidget {
   const MemoListScreen({super.key});
 
   void _addNewMemo(BuildContext context) {
-    final newMemo = Memo(
-      id: DateTime.now().toString(),
-      title: 'New Memo',
-      items: [],
-    );
-
+    final newMemo = MemoUtils.createNewMemo();
     context.read<MemoProvider>().addMemo(newMemo);
 
     Navigator.push(
@@ -29,7 +25,7 @@ class MemoListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('メモ一覧'),
+        title: const Text(AppStrings.memoListTitle),
       ),
       body: Consumer<MemoProvider>(
         builder: (context, memoProvider, child) {
@@ -37,9 +33,20 @@ class MemoListScreen extends StatelessWidget {
             itemCount: memoProvider.memos.length,
             itemBuilder: (context, index) {
               final memo = memoProvider.memos[index];
+              final nonEmptyItems = memo.items
+                  .where((item) => !MemoUtils.isEmptyItem(item));
+              final total = nonEmptyItems.fold(
+                0.0, 
+                (sum, item) => sum + item.value,
+              );
+
               return ListTile(
-                title: Text(memo.title),
-                subtitle: Text('合計: ${NumberFormatter.formatWithCurrency(memo.total)}'),
+                title: Text(memo.title.isEmpty 
+                  ? AppStrings.newMemoTitle 
+                  : memo.title),
+                subtitle: Text(
+                  '${AppStrings.totalPrefix}${NumberFormatter.formatWithCurrency(total)}',
+                ),
                 onTap: () {
                   Navigator.push(
                     context,

@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../models/memo.dart';
 import '../providers/memo_provider.dart';
 import '../widgets/memo_item_tile.dart';
-import '../utils/number_formatter.dart';
+import '../widgets/total_display.dart';
+import '../utils/memo_utils.dart';
+import '../constants/app_strings.dart';
 
 class MemoDetailScreen extends StatefulWidget {
   final Memo memo;
@@ -25,6 +27,9 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
   void initState() {
     super.initState();
     _items = List.from(widget.memo.items);
+    if (!MemoUtils.hasEmptyRow(_items)) {
+      _items.add(MemoUtils.createEmptyItem());
+    }
     _titleController = TextEditingController(text: widget.memo.title);
   }
 
@@ -38,16 +43,12 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
         );
   }
 
-  void _addItem() {
-    setState(() {
-      _items.add(MemoItem(text: '', value: 0));
-    });
-    _updateMemo();
-  }
-
   void _removeItem(int index) {
     setState(() {
       _items.removeAt(index);
+      if (!MemoUtils.hasEmptyRow(_items)) {
+        _items.add(MemoUtils.createEmptyItem());
+      }
     });
     _updateMemo();
   }
@@ -55,6 +56,19 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
   void _updateItem(int index, MemoItem updatedItem) {
     setState(() {
       _items[index] = updatedItem;
+      
+      // If the last empty row was filled, add a new empty row
+      if (index == _items.length - 1 && !MemoUtils.isEmptyItem(updatedItem)) {
+        _items.add(MemoUtils.createEmptyItem());
+      }
+      
+      // Remove empty rows except for the last one
+      if (_items.length > 1) {
+        _items.removeWhere((item) => 
+          MemoUtils.isEmptyItem(item) && 
+          _items.indexOf(item) != _items.length - 1
+        );
+      }
     });
     _updateMemo();
   }
@@ -64,45 +78,34 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
       if (newIndex > oldIndex) {
         newIndex -= 1;
       }
-      final item = _items.removeAt(oldIndex);
-      _items.insert(newIndex, item);
+      if (oldIndex != _items.length - 1 && newIndex != _items.length - 1) {
+        final item = _items.removeAt(oldIndex);
+        _items.insert(newIndex, item);
+      }
     });
     _updateMemo();
   }
 
   @override
   Widget build(BuildContext context) {
-    final total = _items.fold(0.0, (sum, item) => sum + item.value);
+    final total = _items
+        .where((item) => !MemoUtils.isEmptyItem(item))
+        .fold(0.0, (sum, item) => sum + item.value);
 
     return Scaffold(
       appBar: AppBar(
-        title: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(8),
+        title: TextField(
+          controller: _titleController,
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            hintText: AppStrings.memoTitleHint,
           ),
-          child: TextField(
-            controller: _titleController,
-            style: Theme.of(context).textTheme.titleLarge,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              hintText: 'メモタイトル',
-              contentPadding: EdgeInsets.symmetric(vertical: 8),
-            ),
-            onChanged: (_) => _updateMemo(),
-          ),
+          onChanged: (_) => _updateMemo(),
         ),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              '合計: ${NumberFormatter.formatWithCurrency(total)}',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-          ),
+          TotalDisplay(total: total),
           Expanded(
             child: ReorderableListView.builder(
               itemCount: _items.length,
@@ -113,15 +116,12 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
                   item: _items[index],
                   onUpdate: (item) => _updateItem(index, item),
                   onDelete: () => _removeItem(index),
+                  isLastItem: index == _items.length - 1,
                 );
               },
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addItem,
-        child: const Icon(Icons.add),
       ),
     );
   }

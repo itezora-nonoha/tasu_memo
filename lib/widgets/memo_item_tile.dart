@@ -1,15 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../models/memo.dart';
 import '../constants/app_strings.dart';
 import '../utils/number_formatter.dart';
+import '../utils/platform_utils.dart';
 
 class MemoItemTile extends StatefulWidget {
   final MemoItem item;
   final Function(MemoItem) onUpdate;
   final VoidCallback onDelete;
   final bool isLastItem;
+  final Function(bool)? onReorderMode;
 
   const MemoItemTile({
     super.key,
@@ -17,6 +18,7 @@ class MemoItemTile extends StatefulWidget {
     required this.onUpdate,
     required this.onDelete,
     required this.isLastItem,
+    this.onReorderMode,
   });
 
   @override
@@ -95,56 +97,92 @@ class _MemoItemTileState extends State<MemoItemTile> {
     FocusScope.of(context).unfocus();
   }
 
+  Widget _buildInputFields() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: TextField(
+            controller: _textController,
+            focusNode: _textFocusNode,
+            decoration: const InputDecoration(
+              hintText: AppStrings.textInputHint,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            ),
+            onChanged: (value) => _debouncedUpdate(),
+            onSubmitted: _handleTextSubmitted,
+            textInputAction: TextInputAction.next,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: _valueController,
+            focusNode: _valueFocusNode,
+            decoration: const InputDecoration(
+              prefixText: AppStrings.currencySymbol,
+              hintText: AppStrings.defaultValue,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            ),
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.right,
+            onChanged: (value) => _debouncedUpdate(),
+            onSubmitted: _handleValueSubmitted,
+            textInputAction: TextInputAction.done,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: IconButton(
-        icon: const Icon(Icons.drag_handle),
-        onPressed: null,
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: _textController,
-              focusNode: _textFocusNode,
-              decoration: const InputDecoration(
-                hintText: AppStrings.textInputHint,
-                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-              ),
-              onChanged: (value) => _debouncedUpdate(),
-              onSubmitted: _handleTextSubmitted,
-              textInputAction: TextInputAction.next,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 2,
-            child: TextField(
-              controller: _valueController,
-              focusNode: _valueFocusNode,
-              decoration: const InputDecoration(
-                prefixText: AppStrings.currencySymbol,
-                hintText: AppStrings.defaultValue,
-                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-              ),
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.right,
-              onChanged: (value) => _debouncedUpdate(),
-              onSubmitted: _handleValueSubmitted,
-              textInputAction: TextInputAction.done,
+    final isDesktop = PlatformUtils.isDesktop;
+    final content = Row(
+      children: [
+        if (isDesktop && !widget.isLastItem) ...[
+          ReorderableDragStartListener(
+            index: -1, // インデックスは ReorderableListView で上書きされます
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              child: Icon(Icons.drag_handle),
             ),
           ),
         ],
-      ),
-      trailing: widget.isLastItem 
-          ? null 
-          : IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: widget.onDelete,
-            ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: _buildInputFields(),
+          ),
+        ),
+        if (isDesktop && !widget.isLastItem)
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: widget.onDelete,
+          ),
+      ],
     );
+
+    if (!isDesktop && !widget.isLastItem) {
+      return Dismissible(
+        key: widget.key!,
+        direction: DismissDirection.startToEnd,
+        background: Container(
+          color: Colors.red,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.only(left: 20.0),
+          child: const Icon(
+            Icons.delete,
+            color: Colors.white,
+          ),
+        ),
+        onDismissed: (_) => widget.onDelete(),
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   @override

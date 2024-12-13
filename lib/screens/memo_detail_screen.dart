@@ -5,6 +5,7 @@ import '../providers/memo_provider.dart';
 import '../widgets/memo_item_tile.dart';
 import '../widgets/total_display.dart';
 import '../utils/memo_utils.dart';
+import '../utils/platform_utils.dart';
 import '../constants/app_strings.dart';
 
 class MemoDetailScreen extends StatefulWidget {
@@ -57,12 +58,10 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
     setState(() {
       _items[index] = updatedItem;
       
-      // If the last empty row was filled, add a new empty row
       if (index == _items.length - 1 && !MemoUtils.isEmptyItem(updatedItem)) {
         _items.add(MemoUtils.createEmptyItem());
       }
       
-      // Remove empty rows except for the last one
       if (_items.length > 1) {
         _items.removeWhere((item) => 
           MemoUtils.isEmptyItem(item) && 
@@ -92,6 +91,8 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
         .where((item) => !MemoUtils.isEmptyItem(item))
         .fold(0.0, (sum, item) => sum + item.value);
 
+    final isDesktop = PlatformUtils.isDesktop;
+
     return Scaffold(
       appBar: AppBar(
         title: TextField(
@@ -107,18 +108,19 @@ class _MemoDetailScreenState extends State<MemoDetailScreen> {
         children: [
           TotalDisplay(total: total),
           Expanded(
-            child: ReorderableListView.builder(
-              itemCount: _items.length,
+            child: ReorderableListView(
+              buildDefaultDragHandles: !isDesktop,
               onReorder: _reorderItems,
-              itemBuilder: (context, index) {
-                return MemoItemTile(
-                  key: ValueKey(_items[index]),
-                  item: _items[index],
-                  onUpdate: (item) => _updateItem(index, item),
-                  onDelete: () => _removeItem(index),
-                  isLastItem: index == _items.length - 1,
-                );
-              },
+              children: [
+                for (int index = 0; index < _items.length; index++)
+                  MemoItemTile(
+                    key: ValueKey(_items[index]),
+                    item: _items[index],
+                    onUpdate: (item) => _updateItem(index, item),
+                    onDelete: () => _removeItem(index),
+                    isLastItem: index == _items.length - 1,
+                  ),
+              ],
             ),
           ),
         ],

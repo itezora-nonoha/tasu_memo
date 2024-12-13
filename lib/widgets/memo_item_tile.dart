@@ -64,7 +64,7 @@ class _MemoItemTileState extends State<MemoItemTile> {
 
   void _debouncedUpdate() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 10000), () {
       if (mounted) {
         _updateItem();
       }

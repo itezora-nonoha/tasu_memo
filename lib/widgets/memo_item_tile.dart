@@ -141,7 +141,7 @@ class _MemoItemTileState extends State<MemoItemTile> {
     final isDesktop = PlatformUtils.isDesktop;
     final content = Row(
       children: [
-        if (isDesktop && !widget.isLastItem) ...[
+        if (!widget.isLastItem)
           ReorderableDragStartListener(
             index: -1, // インデックスは ReorderableListView で上書きされます
             child: const Padding(
@@ -149,7 +149,6 @@ class _MemoItemTileState extends State<MemoItemTile> {
               child: Icon(Icons.drag_handle),
             ),
           ),
-        ],
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -167,11 +166,11 @@ class _MemoItemTileState extends State<MemoItemTile> {
     if (!isDesktop && !widget.isLastItem) {
       return Dismissible(
         key: widget.key!,
-        direction: DismissDirection.startToEnd,
+        direction: DismissDirection.endToStart,
         background: Container(
           color: Colors.red,
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.only(left: 20.0),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20.0),
           child: const Icon(
             Icons.delete,
             color: Colors.white,
